@@ -19,7 +19,6 @@ for clique in cliques:
     while len(vals) < n:
         vals += [float(i) for i in input().strip().split()]
     f.vals = vals
-    print(f)
     if prev:
         prev*=f
     else: 
