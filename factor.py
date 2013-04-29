@@ -1,15 +1,14 @@
-import numpy as np
 from itertools import product
+
 
 class Factor(object):
     
-    def __init__(self, var=[], vals=[], card=[], name= 'None'):
+    def __init__(self, var=[], vals=[], card=[]):
         """ a factor has list of variables, each with a cardinality, and for each possible assignment to its variable(s),
         a position in the vals array."""
-        self.var= np.array(var)
+        self.var= var
         self.card=card
-        self.vals=np.array(vals)
-        self.name=name
+        self.vals=vals
         self.strides = [0]*len(card)
         prev = None
         for v in reversed(var):
@@ -20,12 +19,15 @@ class Factor(object):
             prev = v
 
     def __str__(self):
-        s = '  '.join([chr(65+i) for i in self.var])
-        s += '  | {:<5}\n'.format(chr(934))
-        s += '-'*len(s) + '\n'
+        vars_ = [chr(65+i) for i in self.var]
+        s = '  '.join(vars_)
+        s += '    {:<5}\n'.format(chr(934)+'(' + ', '.join(vars_)+')')
+        line = '–'*len(s) + '\n'
+        s += line
         for i, assignment in enumerate(product(*[list(range(self.card[n])) for n in self.var])):
             s += '  '.join([str(x) for x in assignment])
-            s+= '  | {:<5.2}\n'.format(self.vals[i])
+            s+= '    {:<5.3}\n'.format(self.vals[i])
+        s += line
         return(s)
 
     def __mul__(self, other):
@@ -34,7 +36,7 @@ class Factor(object):
         j = k = 0
         v = var[0]
         assignment = [0]*len(var)
-        for i in range(np.prod([self.card[v] for v in var])):
+        for i in range(self.prod([self.card[v] for v in var])):
             psi[tuple(assignment)] = self.vals[j]*other.vals[k]
             for l,v in enumerate(var):
                 assignment[l] = (assignment[l] + 1) % self.card[v]
@@ -45,7 +47,8 @@ class Factor(object):
                     j += self.strides[v] 
                     k += other.strides[v]
                     break
-        return Factor(var=var,vals=to_array(psi), card=self.card)
+        psi = [psi[k] for k in sorted(psi)]
+        return Factor(var=var,vals=psi, card=self.card)
 
 
     def __rmul__(self, other):
@@ -55,6 +58,9 @@ class Factor(object):
     def __imul__(self, other):
         return self * other
 
-
-def to_array(d):
-    return [d[k] for k in sorted(d)]
+    @staticmethod
+    def prod(l):
+        p = 1
+        for i in l:
+            p *= i
+        return p
