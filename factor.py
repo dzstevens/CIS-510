@@ -1,4 +1,6 @@
 from itertools import product
+from functools import reduce
+import operator
 
 
 class Factor(object):
@@ -65,41 +67,30 @@ class Factor(object):
             p *= i
         return p
 
-    def ComputeJointDistribution(cliques):
-	return reduce(lambda x,y:x*y,cliquess)
-    
-    def ComputeMarginal(V,F):
-   """
-	V is the variables to be marginalized
-	F is a factor list that contains V
-   """
-	variableList = []
-	for factor in F:
-		var = factor.var
-		variablelist.append(var)
-	union_variables = set().union(*variableList)
-	v = list(union_variables.difference(V))
-	jointE = ComputeJointDistribution(F)
-	jointE_normalizedVal = jointE.vals/np.sum(jointE.vals)
-	jointE.vals = jointE_normalizedVal
-	return FactorMarginalization(jointE,v)
 
-    def SumProductEliminaterVar(z,factorList):
-	useFactors = []
-	unusedFactors = []
-	scope = []
-	for fi in factorList:
-		if z in fi.var:
-			useFactors.append(fi)
-			scope = list(set.union(set(scope),fi.var)
-		else:
-			unusedFactors.append(fi)
-	psiFactor = ComputeJointDistribution(useFactors)
-	tauFactor = FactorMarginalization(psiFactor,[z])
-	return unusedFactors+[tauFactor]i
+def joint_distribution(cliques):
+    return reduce(mul, cliques)
 
-    def SumProductVE(self,Z,F):
-	for z in Z:
-		F = SumProductEliminaterVar(z,F)
-	return reduce(lambda x,y:x*y,F)
- 
+
+def marginalize(marginal_vars, factors):
+    all_vars = set.union(*[set(factor.var) for factor in F])
+    marginalized_vars = [all_vars - marginal_vars]
+    joint = Factor.joint_distribution(factors)
+    Z = sum(joint.vals)
+    joint.vals = [val/Z for val in joint.vals]
+    return FactorMarginalization(joint, marginalized_vars) #what is this?
+
+
+def _eliminate_var(v, factors):
+    used_factors = {f for f in factors if v in f.var}
+    psi = Factor.joint_distribution(used_factors)
+    tau = marginalize(psi,[v])
+    return [set(factors) - used_factors] + [tau]
+
+
+def sum_product_variable_elimination(variables, factors):
+    F = []
+    for v in variables:
+        F += _eliminate_var(v, factors)
+    return reduce(mul, F)
+
