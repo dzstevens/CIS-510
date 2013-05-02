@@ -9,21 +9,22 @@ for i in range(int(input())):
     cliques.append([int(i) for i in input().strip().split()][1:])
 
 prev = None
+vals = []
 for clique in cliques:
     f = Factor(var=clique, card=cards)
-    vals = []
     line = None
-    while not line:
-        line = input().strip()
-    n = int(line)
+    while not vals:
+        vals += [float(i) for i in input().strip().split()]
+    n = int(vals.pop(0))
     while len(vals) < n:
         vals += [float(i) for i in input().strip().split()]
-    f.vals = vals
+    f.vals = vals[:n]
+    vals = vals[n:]
     if prev:
         print(f)
         prev*=f
     else: 
         prev = f
-    print(prev)
+    #print(prev)
 
 print('Z =', sum(prev.vals))
