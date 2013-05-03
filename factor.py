@@ -3,61 +3,41 @@ from functools import reduce
 import operator
 
 
-class Factor(object):
+class Factor(dict):
     
-    def __init__(self, var=[], vals=[], card=[]):
-        '''
-        a factor has list of variables, each with a cardinality, and for each
-        possible assignment to its variable(s), a position in the vals array.
-        '''
-        self.var= var
-        self.card=card
-        self.vals=vals
-        self.strides = [0] * len(card)
-        prev = None
-        for v in reversed(var):
-            if not prev:
-                self.strides[v] = 1
-            else:
-                self.strides[v] = self.strides[prev] * card[prev]
-            prev = v
+    def __init__(self, vars_, vals, card):
+        self.card = card
+        self.vars = vars_
+        self.assignments = [a for a in product(*[list(range(card[n])) for n in vars_])]
+        self.update(zip(self.assignments, vals))
 
     def __str__(self):
-        vars_ = [chr(65+i) for i in self.var]
+        vars_ = [chr(65+i) for i in self.vars]
         s = '  '.join(vars_)
         s += '    {:<5}\n'.format(chr(934)+'(' + ', '.join(vars_)+')')
         line = '–'*len(s) + '\n'
         s += line
-        for assignment, value in self.items():
+        for assignment in sorted(self):
             s += '  '.join([str(x) for x in assignment])
-            s += '    {:<5.3}\n'.format(value)
+            value = self[assignment]
+            s += '    '
+            if isinstance(value, float):
+                s += '{:<5.3}\n'.format(value)
+            else:
+                s += '{:<5}\n'.format(value)
         s += line
         return(s)
 
-    def items(self):
-        for i, assignment in enumerate(self.assignments):
-            yield assignment, self.vals[i]
-
     def __mul__(self, other):
-        var = sorted(set(self.var) | set(other.var))
-        psi = dict()
-        j = k = 0
-        v = var[0]
-        assignment = [0]*len(var)
-        for i in range(self.prod([self.card[v] for v in var])):
-            psi[tuple(assignment)] = self.vals[j] * other.vals[k]
-            for l,v in enumerate(var):
-                assignment[l] = (assignment[l] + 1) % self.card[v]
-                if not assignment[l]:
-                    j -= (self.card[v] - 1) * self.strides[v]
-                    k -= (self.card[v] - 1) * other.strides[v]
-                else:
-                    j += self.strides[v] 
-                    k += other.strides[v]
-                    break
-        psi = [psi[k] for k in sorted(psi)]
-        return Factor(var=var,vals=psi, card=self.card)
-
+        vars_ = sorted(set(self.vars + other.vars))
+        ind1 = tuple(vars_.index(v) for v in self.vars if v in vars_)
+        ind2 = tuple(vars_.index(v) for v in other.vars if v in vars_)
+        psi = []
+        for assignment in product(*[range(self.card[v]) for v in vars_]):
+            key1 = tuple(assignment[i] for i in ind1)
+            key2 = tuple(assignment[i] for i in ind2)
+            psi.append(self[key1] * other[key2])
+        return Factor(vars_, psi, self.card)
 
     def __rmul__(self, other):
         return self * other
@@ -65,24 +45,14 @@ class Factor(object):
     def __imul__(self, other):
         return self * other
 
-    def __iter__(self):
-        return iter(self.vals)
+    def __truediv__(self, x):
+        return Factor(self.vars, [self[v]/x for v in sorted(self)], self.card)
 
-    @property
-    def assignments(self):
-        try:
-            return self._assigments
-        except AttributeError:
-            self._assignments = [a for a in product(*[list(range(self.card[n])) for n in self.var])]
-            return self._assignments
-        
+    def __itruediv__(self, x):
+        return self / x
 
-    @staticmethod
-    def prod(l):
-        p = 1
-        for i in l:
-            p *= i
-        return p
+    def normalize(self):
+        self /= sum(self.values())
 
 
 def joint_distribution(cliques):
@@ -90,18 +60,17 @@ def joint_distribution(cliques):
 
 
 def marginalize(marginal_vars, factors):
-    all_vars = set.union(*[set(factor.var) for factor in F])
-    marginalized_vars = [all_vars - marginal_vars]
+    all_vars = set.union(*[set(factor.vars) for factor in F])
+    marginalized_vars = [all_vars - set(marginal_vars)]
     joint = Factor.joint_distribution(factors)
-    Z = sum(joint.vals)
-    joint.vals = [val/Z for val in joint.vals]
+    joint.normalize()
     return FactorMarginalization(joint, marginalized_vars) #what is this?
 
 
 def _eliminate_var(v, factors):
     used_factors = {f for f in factors if v in f.var}
-    psi = Factor.joint_distribution(used_factors)
-    tau = marginalize(psi,[v])
+    psi = joint_distribution(used_factors)
+    tau = marginalize([v], psi)
     return [set(factors) - used_factors] + [tau]
 
 
