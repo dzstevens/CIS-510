@@ -26,11 +26,15 @@ class Factor(object):
         s += '    {:<5}\n'.format(chr(934)+'(' + ', '.join(vars_)+')')
         line = '–'*len(s) + '\n'
         s += line
-        for i, assignment in enumerate(product(*[list(range(self.card[n])) for n in self.var])):
+        for assignment, value in self.items():
             s += '  '.join([str(x) for x in assignment])
-            s+= '    {:<5.3}\n'.format(self.vals[i])
+            s += '    {:<5.3}\n'.format(value)
         s += line
         return(s)
+
+    def items(self):
+        for i, assignment in enumerate(product(*[list(range(self.card[n])) for n in self.var])):
+            yield assignment, self.vals[i]
 
     def __mul__(self, other):
         var = sorted(set(self.var) | set(other.var))
@@ -59,6 +63,9 @@ class Factor(object):
     
     def __imul__(self, other):
         return self * other
+
+    def __iter__(self):
+        return iter(self.vals)
 
     @staticmethod
     def prod(l):

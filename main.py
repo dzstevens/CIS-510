@@ -20,11 +20,10 @@ for clique in cliques:
         vals += [float(i) for i in input().strip().split()]
     f.vals = vals[:n]
     vals = vals[n:]
+    print(f)
     if prev:
-        print(f)
         prev*=f
     else: 
         prev = f
-    #print(prev)
 
-print('Z =', sum(prev.vals))
+print('Z =', sum(prev))
