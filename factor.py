@@ -6,18 +6,20 @@ import operator
 class Factor(object):
     
     def __init__(self, var=[], vals=[], card=[]):
-        """ a factor has list of variables, each with a cardinality, and for each possible assignment to its variable(s),
-        a position in the vals array."""
+        '''
+        a factor has list of variables, each with a cardinality, and for each
+        possible assignment to its variable(s), a position in the vals array.
+        '''
         self.var= var
         self.card=card
         self.vals=vals
-        self.strides = [0]*len(card)
+        self.strides = [0] * len(card)
         prev = None
         for v in reversed(var):
             if not prev:
                 self.strides[v] = 1
             else:
-                self.strides[v] = self.strides[prev]*card[prev]
+                self.strides[v] = self.strides[prev] * card[prev]
             prev = v
 
     def __str__(self):
@@ -33,7 +35,7 @@ class Factor(object):
         return(s)
 
     def items(self):
-        for i, assignment in enumerate(product(*[list(range(self.card[n])) for n in self.var])):
+        for i, assignment in enumerate(self.assignments):
             yield assignment, self.vals[i]
 
     def __mul__(self, other):
@@ -43,7 +45,7 @@ class Factor(object):
         v = var[0]
         assignment = [0]*len(var)
         for i in range(self.prod([self.card[v] for v in var])):
-            psi[tuple(assignment)] = self.vals[j]*other.vals[k]
+            psi[tuple(assignment)] = self.vals[j] * other.vals[k]
             for l,v in enumerate(var):
                 assignment[l] = (assignment[l] + 1) % self.card[v]
                 if not assignment[l]:
@@ -58,14 +60,22 @@ class Factor(object):
 
 
     def __rmul__(self, other):
-        return self *other
-
+        return self * other
     
     def __imul__(self, other):
         return self * other
 
     def __iter__(self):
         return iter(self.vals)
+
+    @property
+    def assignments(self):
+        try:
+            return self._assigments
+        except AttributeError:
+            self._assignments = [a for a in product(*[list(range(self.card[n])) for n in self.var])]
+            return self._assignments
+        
 
     @staticmethod
     def prod(l):
