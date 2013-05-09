@@ -1,7 +1,7 @@
 from itertools import product
 from functools import reduce
 import operator
-
+import numpy as np
 
 class Factor(object):
     
@@ -71,14 +71,33 @@ class Factor(object):
 def joint_distribution(cliques):
     return reduce(mul, cliques)
 
-
+def FactorMarginalization(A,V):
+    """
+	B= FactorMarginalization(A,V)computes the factor with the 
+	variables in V summed out.
+    """	
+	B = Factor()
+	map=[]
+	B.var = list(set(A.var)-set(V)) 
+	for v in V:
+		map.append(A.var.index(v))
+		B.card = A.card-A.card[map[v]]		
+	len=len(V)
+	j=0
+	tmp=[]
+	while j<len-1:
+		for i in [0.(len(A.vals)-1)/2]:
+			tmp.append(A.vals[i]+A.vals[i+A.stride[map[j]]])
+		A.vals=tmp
+	return Factor(var=B.var,vals=A.vals,card=B.card)	
+	
 def marginalize(marginal_vars, factors):
     all_vars = set.union(*[set(factor.var) for factor in F])
     marginalized_vars = [all_vars - marginal_vars]
     joint = Factor.joint_distribution(factors)
     Z = sum(joint.vals)
     joint.vals = [val/Z for val in joint.vals]
-    return FactorMarginalization(joint, marginalized_vars) #what is this?
+    return FactorMarginalization(joint, marginalized_vars) 
 
 
 def _eliminate_var(v, factors):
