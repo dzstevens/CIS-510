@@ -3,107 +3,82 @@ from functools import reduce
 import operator
 import numpy as np
 
-class Factor(object):
+class Factor(dict):
     
-    def __init__(self, var=[], vals=[], card=[]):
-        """ a factor has list of variables, each with a cardinality, and for each possible assignment to its variable(s),
-        a position in the vals array."""
-        self.var= var
-        self.card=card
-        self.vals=vals
-        self.strides = [0]*len(card)
-        prev = None
-        for v in reversed(var):
-            if not prev:
-                self.strides[v] = 1
-            else:
-                self.strides[v] = self.strides[prev]*card[prev]
-            prev = v
+    def __init__(self, vars_, vals, card):
+        self.card = card
+        self.vars = vars_
+        self.assignments = [a for a in product(*[list(range(card[n])) for n in vars_])]
+        self.update(zip(self.assignments, vals))
 
     def __str__(self):
-        vars_ = [chr(65+i) for i in self.var]
+        vars_ = [chr(65+i) for i in self.vars]
         s = '  '.join(vars_)
         s += '    {:<5}\n'.format(chr(934)+'(' + ', '.join(vars_)+')')
         line = '–'*len(s) + '\n'
         s += line
-        for i, assignment in enumerate(product(*[list(range(self.card[n])) for n in self.var])):
+        for assignment in sorted(self):
             s += '  '.join([str(x) for x in assignment])
-            s+= '    {:<5.3}\n'.format(self.vals[i])
+            value = self[assignment]
+            s += '    '
+            if isinstance(value, float):
+                s += '{:<5.3}\n'.format(value)
+            else:
+                s += '{:<5}\n'.format(value)
         s += line
         return(s)
 
     def __mul__(self, other):
-        var = sorted(set(self.var) | set(other.var))
-        psi = dict()
-        j = k = 0
-        v = var[0]
-        assignment = [0]*len(var)
-        for i in range(self.prod([self.card[v] for v in var])):
-            psi[tuple(assignment)] = self.vals[j]*other.vals[k]
-            for l,v in enumerate(var):
-                assignment[l] = (assignment[l] + 1) % self.card[v]
-                if not assignment[l]:
-                    j -= (self.card[v] - 1) * self.strides[v]
-                    k -= (self.card[v] - 1) * other.strides[v]
-                else:
-                    j += self.strides[v] 
-                    k += other.strides[v]
-                    break
-        psi = [psi[k] for k in sorted(psi)]
-        return Factor(var=var,vals=psi, card=self.card)
-
+        vars_ = sorted(set(self.vars + other.vars))
+        ind1 = tuple(vars_.index(v) for v in self.vars if v in vars_)
+        ind2 = tuple(vars_.index(v) for v in other.vars if v in vars_)
+        psi = []
+        for assignment in product(*[range(self.card[v]) for v in vars_]):
+            key1 = tuple(assignment[i] for i in ind1)
+            key2 = tuple(assignment[i] for i in ind2)
+            psi.append(self[key1] * other[key2])
+        return Factor(vars_, psi, self.card)
 
     def __rmul__(self, other):
-        return self *other
-
+        return self * other
     
     def __imul__(self, other):
         return self * other
 
-    @staticmethod
-    def prod(l):
-        p = 1
-        for i in l:
-            p *= i
-        return p
+    def __truediv__(self, x):
+        return Factor(self.vars, [self[v]/x for v in sorted(self)], self.card)
+
+    def __itruediv__(self, x):
+        return self / x
+
+    def normalize(self):
+        self /= sum(self.values())
 
 
 def joint_distribution(cliques):
     return reduce(mul, cliques)
 
-def FactorMarginalization(A,V):
-    """
-	B= FactorMarginalization(A,V)computes the factor with the 
-	variables in V summed out.
-    """	
-	B = Factor()
-	map=[]
-	B.var = list(set(A.var)-set(V)) 
-	for v in V:
-		map.append(A.var.index(v))
-		B.card = A.card-A.card[map[v]]		
-	len=len(V)
-	j=0
-	tmp=[]
-	while j<len-1:
-		for i in [0.(len(A.vals)-1)/2]:
-			tmp.append(A.vals[i]+A.vals[i+A.stride[map[j]]])
-		A.vals=tmp
-	return Factor(var=B.var,vals=A.vals,card=B.card)	
-	
-def marginalize(marginal_vars, factors):
-    all_vars = set.union(*[set(factor.var) for factor in F])
-    marginalized_vars = [all_vars - marginal_vars]
+def FactorMarginalization(factor,marginal_var):
+    vars_ = factor.vars.remove(marginal_var)
+    card_ = factor.card[n] for n in factor.vars if n in vars_
+    tau = []
+    for assignment in product(*[range(factor.card[v]) for v in vars_]):
+        key1 = tuple()
+        tau.append(self[key1]+self[key2])
+    return Factor(vars_,tau,card_)
+
+def marginalize(marginal_var, factors):
+    all_vars = set.union(*[set(factor.vars) for factor in F])
+    marginalized_vars = [all_vars - set(marginal_vars)]
     joint = Factor.joint_distribution(factors)
-    Z = sum(joint.vals)
-    joint.vals = [val/Z for val in joint.vals]
-    return FactorMarginalization(joint, marginalized_vars) 
+    joint.normalize()
+    return FactorMarginalization(joint, marginal_var) #what is this?
 
 
 def _eliminate_var(v, factors):
     used_factors = {f for f in factors if v in f.var}
-    psi = Factor.joint_distribution(used_factors)
-    tau = marginalize(psi,[v])
+    psi = joint_distribution(used_factors)
+    tau = marginalize([v], psi)
     return [set(factors) - used_factors] + [tau]
 
 
@@ -112,4 +87,3 @@ def sum_product_variable_elimination(variables, factors):
     for v in variables:
         F += _eliminate_var(v, factors)
     return reduce(mul, F)
-
