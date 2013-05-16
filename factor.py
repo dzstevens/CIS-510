@@ -72,7 +72,7 @@ def marginalize(marginal_var, factors):
     marginalized_vars = [all_vars - set(marginal_vars)]
     joint = Factor.joint_distribution(factors)
     joint.normalize()
-    return FactorMarginalization(joint, marginal_var) #what is this?
+    return FactorMarginalization(joint, marginal_var) 
 
 
 def _eliminate_var(v, factors):
