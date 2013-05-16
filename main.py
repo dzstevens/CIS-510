@@ -1,6 +1,5 @@
-from factor import Factor
-import factor
-import numpy
+from factor import *
+import numpy as np
 
 input()
 variables = [i for i in range(int(input().strip()))]
@@ -14,7 +13,6 @@ for clique in cliques:
         if v in clique: 
             count[v] += 1 
 
-prev = None
 vals = []
 F=[]
 for clique in cliques:
@@ -29,16 +27,10 @@ for clique in cliques:
     f = Factor(clique, vals[:n], cards)
     vals = vals[n:]
     F.append(f)
-    #print(f)
+
 # reorder the variable base on the count
-inds = numpy.argsort(count)
-sorted_variable = numpy.take(variables,inds)
+inds = np.argsort(count)
+sorted_variable = np.take(variables,inds)
 
-prev = factor.sum_product_variable_elimination(sorted_variable,F)
-
-"""if prev:
-        prev *= f
-    else: 
-        prev = f
-"""
-print('Z =', sum(prev.values()))
+Z = variable_elimination(sorted_variable,F)
+print('Z =', sum(Z.values()))
