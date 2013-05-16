@@ -1,7 +1,7 @@
 from itertools import product
 from functools import reduce
-import operator
-import numpy as np
+from operator import mul
+
 
 class Factor(dict):
     
@@ -58,32 +58,28 @@ class Factor(dict):
 def joint_distribution(cliques):
     return reduce(mul, cliques)
 
-def FactorMarginalization(factor,marginal_var):
-    vars_ = factor.vars.remove(marginal_var)
-    card_ = factor.card[n] for n in factor.vars if n in vars_
-    tau = []
-    for assignment in product(*[range(factor.card[v]) for v in vars_]):
-        key1 = tuple()
-        tau.append(self[key1]+self[key2])
-    return Factor(vars_,tau,card_)
-
-def marginalize(marginal_var, factors):
-    all_vars = set.union(*[set(factor.vars) for factor in F])
-    marginalized_vars = [all_vars - set(marginal_vars)]
-    joint = Factor.joint_distribution(factors)
-    joint.normalize()
-    return FactorMarginalization(joint, marginal_var) 
-
+def marginalize(factor, marginal_var):
+    ind = factor.vars.index(marginal_var)
+    vars_ = factor.vars[:ind]+factor.vars[ind+1:]
+    tau = Factor(vars_, [], factor.card)
+    for assignment in [a for a in product(*[list(range(factor.card[n])) for n in vars_])]:
+        tau[assignment] = sum(factor[assignment[:ind]+(i,)+assignment[ind:]]
+                                    for i in range(factor.card[marginal_var]))
+    return tau
 
 def _eliminate_var(v, factors):
-    used_factors = {f for f in factors if v in f.var}
+    used_factors = []
+    for factor in factors[:]:
+        if v in factor.vars:
+            used_factors.append(factor)
+            factors.remove(factor)
     psi = joint_distribution(used_factors)
-    tau = marginalize([v], psi)
-    return [set(factors) - used_factors] + [tau]
+    factors.append(marginalize(psi, v))
+    return factors
 
 
-def sum_product_variable_elimination(variables, factors):
-    F = []
+def variable_elimination(variables, factors):
+    F = factors
     for v in variables:
-        F += _eliminate_var(v, factors)
+        F = _eliminate_var(v, F)
     return reduce(mul, F)
