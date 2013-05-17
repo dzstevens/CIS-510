@@ -124,14 +124,14 @@ class Network:
             for v in variables:
                 self.eliminate_var(v)
         else:
-            fn = {'min-neighbor     ': self._num_neighbors,
+            fn = {'min-neighbor'     : self._num_neighbors,
                   'min-weights'      : self._weights,
                   'min-fill'         : self._fill,
                   'weighted-min-fill': self._weighted_fill}
 
             while variables:
                 best = self._best_var(variables, fn[heuristic])
-                eliminate_var(best)
+                self.eliminate_var(best)
                 variables.remove(best)
         return self
 
@@ -141,7 +141,7 @@ class Network:
         neighbors = defaultdict(set)
         for factor in self.factors:
             for v in factor.vars:
-                self.neighbors[v] |= set(factor.vars) - {v}
+                neighbors[v] |= set(factor.vars) - {v}
 
         for v in neighbors:
             if v in variables:
