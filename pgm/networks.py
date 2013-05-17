@@ -2,13 +2,14 @@ from itertools import product
 from functools import reduce
 from operator import mul
 from collections import defaultdict
-
+import timeit
 
 class Factor(dict):
     
     def __init__(self, vars_, vals, net):
         self.vars = vars_
         self.network = net
+        self.vals = vals
         assignments = [a for a in product(*[net.card[v] for v in vars_])]
         self.update(zip(assignments, vals))
 
@@ -122,6 +123,7 @@ class Network:
         del self.card[v]
 
     def variable_elimination(self, variables, heuristic=None):
+        start = timeit.default_timer()
         if not heuristic:
             for v in variables:
                 self.eliminate_var(v)
@@ -135,8 +137,22 @@ class Network:
                 best = self._best_var(variables, fn[heuristic])
                 eliminate_var(best)
                 variables.remove(best)
+        stop = timeit.default_timer()
+        print ("the running time is :",stop-start)
         return self
 
+    def map(self,variables):
+
+        inference_variables = list(set(self.vars)-set(variables)) 
+        f1=self.variable_elimination(inference_variables)
+        f2 = self.joint_distribution(f1.factors)
+        f2.assignments = [a for a in product(*[f2.network.card[v] for v in f2.vars])]
+        f2.update(zip(f2.assignments,f2.vals))
+        max_probability = max(f2.vals)
+        m1 = f2.vals.index(max_probability)
+        max_assignment = f2.assignments[m1]
+        print("the maximum probability is :",max_probability,"when the value is",max_assignment)
+       
     def _best_var(self, variables, f):
         best = None
         best_val = float('inf')

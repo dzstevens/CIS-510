@@ -43,7 +43,8 @@ if __name__ == '__main__':
                                                   'the order they were given')
     parser.add_argument('-v', '--vars', help='The list of variables you wish to eliminate.',
                         nargs='+', type=int, default=[])
-    
+    parser.add_argument('-i','--var1s',help = 'MAP inference on the list of variables.',
+                        nargs='+', type=int, default=[])
     args = parser.parse_args()
     network = util.create_network(args.model)
     if args.evidence:
@@ -55,4 +56,5 @@ if __name__ == '__main__':
         print('Z =', network.partition_function(args.heuristic))
     elif args.function == 'variable_elimination':
         print(network.variable_elimination(args.vars, args.heuristic))
-    
+    elif args.function == 'map':
+        print(network.map(args.vars))
