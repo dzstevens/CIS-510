@@ -110,13 +110,15 @@ class Network:
 
     def eliminate_var(self, v):
         used_factors = []
+        new_factors = []
         for factor in self.factors[:]:
             if v in factor.vars:
                 used_factors.append(factor)
-                self.remove_factor(factor)
+            else:
+                new_factors.append(factor)
         psi = self.joint_distribution(used_factors)
         psi.marginalize(v)
-        self.add_factor(psi)
+        self.factors = new_factors + [psi]
         del self.card[v]
 
     def variable_elimination(self, variables, heuristic=None):
@@ -124,10 +126,10 @@ class Network:
             for v in variables:
                 self.eliminate_var(v)
         else:
-            fn = {'min-neighbor'     : self._num_neighbors,
-                  'min-weights'      : self._weights,
-                  'min-fill'         : self._fill,
-                  'weighted-min-fill': self._weighted_fill}
+            fn = {'min-neighbor'      : self._num_neighbors,
+                  'min-weights'       : self._weights,
+                  'min-fill'          : self._fill,
+                  'weighted-min-fill' : self._weighted_fill}
 
             while variables:
                 best = self._best_var(variables, fn[heuristic])
