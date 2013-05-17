@@ -1,7 +1,7 @@
 Probabilistic Graphical Models
 ==============================
 
-    This package can be used to create graphical models and perform various operations on them.
+This package can be used to create graphical models and perform various operations on them.
 
 Usage
 -----
@@ -13,7 +13,7 @@ Usage
       model                 the model file for your network
       function              the function to perform on your network. Current
                             choices: joint_distribution, variable_elimination,
-                            partition_function
+                            partition_function, map
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -22,7 +22,9 @@ Usage
       -u HEURISTIC, --heuristic HEURISTIC
                             the heuristic to be used when performing variable
                             elimination. If not specified, variables will be
-                            simply be eliminated in the order they were given
+                            simply be eliminated in the order they were given.
+                            Current choices: min_neighbor, min_weights, min_fill,
+                            weighed_min_fill
       -v VARS [VARS ...], --vars VARS [VARS ...]
                             The list of variables for variable eliminationor MAP
                             inference

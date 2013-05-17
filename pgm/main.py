@@ -10,12 +10,13 @@ if __name__ == '__main__':
     parser.add_argument('model', help='the model file for your network')
     parser.add_argument('function', help='the function to perform on your network. '
                                          'Current choices: joint_distribution, '
-                                         'variable_elimination, partition_function')
+                                         'variable_elimination, partition_function, map')
     parser.add_argument('-e', '--evidence', help='an evidence file to condition on')
     parser.add_argument('-u', '--heuristic', help='the heuristic to be used when performing '
                                                   'variable elimination. If not specified, '
                                                   'variables will be simply be eliminated in '
-                                                  'the order they were given')
+                                                  'the order they were given. Current choices: '
+                                                  'min_neighbor, min_weights, min_fill, weighed_min_fill')
     parser.add_argument('-v', '--vars', help='The list of variables for variable elimination'
                                               'or MAP inference',
                         nargs='+', type=int, default=[])
