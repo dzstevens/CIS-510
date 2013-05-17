@@ -2,7 +2,6 @@ from itertools import product
 from functools import reduce
 from operator import mul
 from collections import defaultdict
-import timeit
 
 class Factor(dict):
     
@@ -122,7 +121,6 @@ class Network:
         del self.card[v]
 
     def variable_elimination(self, variables, heuristic=None):
-        start = timeit.default_timer()
         if not heuristic:
             for v in variables:
                 self.eliminate_var(v)
@@ -136,8 +134,6 @@ class Network:
                 best = self._best_var(variables, fn[heuristic])
                 self.eliminate_var(best)
                 variables.remove(best)
-        stop = timeit.default_timer()
-        print ("the running time is :",stop-start)
         return self
 
     def map(self,variables):

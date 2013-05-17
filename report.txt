@@ -1,0 +1,65 @@
+models/alarmreduced.uai:
+
+    no heuristic:
+    Runtime: 1.7 ms
+    min-neighbor
+    Runtime: 1.55 ms
+    min-weights
+    Runtime: 2.06 ms
+    min-fill
+    Runtime: 1.68 ms
+    weighted-min-fill
+    Runtime: 1.77 ms
+
+models/grid3x3.uai:
+
+    no heuristic:
+    Runtime: 1.69 ms
+    min-neighbor
+    Runtime: 1.77 ms
+    min-weights
+    Runtime: 2.11 ms
+    min-fill
+    Runtime: 1.84 ms
+    weighted-min-fill
+    Runtime: 2.07 ms
+
+models/grid4x4.uai:
+
+    no heuristic:
+    Runtime: 4.73 ms
+    min-neighbor
+    Runtime: 4.93 ms
+    min-weights
+    Runtime: 5.86 ms
+    min-fill
+    Runtime: 4.86 ms
+    weighted-min-fill
+    Runtime: 6.19 ms
+
+models/network.uai:
+
+    no heuristic:
+    Runtime: 4.58e+02 ms
+    min-neighbor
+    Runtime: 1.93e+02 ms
+    min-weights
+    Runtime: 5.27e+02 ms
+    min-fill
+    Runtime: 2.22e+02 ms
+    weighted-min-fill
+    Runtime: 4.49e+02 ms
+
+models/tree.uai:
+
+    no heuristic:
+    Runtime: 0.243 ms
+    min-neighbor
+    Runtime: 0.279 ms
+    min-weights
+    Runtime: 0.299 ms
+    min-fill
+    Runtime: 0.291 ms
+    weighted-min-fill
+    Runtime: 0.313 ms
+

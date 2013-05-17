@@ -1,5 +1,7 @@
 import argparse
+import time
 import pgm.util as util
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='python -m pgm.main', 
@@ -17,16 +19,21 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--vars', help='The list of variables for variable elimination'
                                               'or MAP inference',
                         nargs='+', type=int, default=[])
+    parser.add_argument('-t', '--time', help='Set this to get timing stats at runtinme',
+                        action='store_true')
 
     args = parser.parse_args()
     network = util.create_network(args.model)
     if args.evidence:
         evidence = util.get_evidence(args.evidence)
         network.condition(evidence)
+    if args.time:
+        start = time.time()
     if args.function == 'joint_distribution':
         print(network.joint_distribution())
     elif args.function == 'partition_function':
-        print('Z =', network.partition_function(args.heuristic))
+        network.partition_function(args.heuristic)
+#        print('Z =', network.partition_function(args.heuristic))
     elif args.function == 'variable_elimination':
         print(network.variable_elimination(args.vars, args.heuristic))
     elif args.function == 'map':
@@ -35,3 +42,6 @@ if __name__ == '__main__':
         for v, a in assignment.items():
                 print('{} = {}'.format(v, a))
         print('\nProbability:', prob)
+
+    if args.time:
+        print('Runtime: {:.3} ms'.format((time.time() - start)*1000))
