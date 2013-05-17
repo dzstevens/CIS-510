@@ -9,7 +9,6 @@ class Factor(dict):
     def __init__(self, vars_, vals, net):
         self.vars = vars_
         self.network = net
-        self.vals = vals
         assignments = [a for a in product(*[net.card[v] for v in vars_])]
         self.update(zip(assignments, vals))
 
@@ -63,7 +62,7 @@ class Factor(dict):
                         del self[assignment]
 
     def normalize(self):
-        self /= sum(self.values())
+        self.update(self/sum(self.values()))
 
     def marginalize(self, v):
         ind = self.vars.index(v)
@@ -80,7 +79,7 @@ class Factor(dict):
 
 class Network:
 
-    def __init__(self, factors=[], card={}, ntype='MARKOV'):
+    def __init__(self, factors=[], card=[], ntype='MARKOV'):
         self.ntype=ntype
         self.card = {i: list(range(v)) for i, v in enumerate(card)}
         self.factors = factors
@@ -143,15 +142,14 @@ class Network:
 
     def map(self,variables):
 
-        inference_variables = list(set(self.vars)-set(variables)) 
+        inference_variables = list(set(self.card)-set(variables)) 
         f1=self.variable_elimination(inference_variables)
         f2 = self.joint_distribution(f1.factors)
         f2.assignments = [a for a in product(*[f2.network.card[v] for v in f2.vars])]
-        f2.update(zip(f2.assignments,f2.vals))
-        max_probability = max(f2.vals)
-        m1 = f2.vals.index(max_probability)
-        max_assignment = f2.assignments[m1]
-        print("the maximum probability is :",max_probability,"when the value is",max_assignment)
+        f2.update(zip(f2.assignments,f2.values()))
+        f2.normalize()
+        max_assignment = max(f2, key=lambda x: f2[x])
+        return dict(zip(variables, max_assignment)), f2[max_assignment]
        
     def _best_var(self, variables, f):
         best = None
