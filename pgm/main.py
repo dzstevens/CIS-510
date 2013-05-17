@@ -44,7 +44,10 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--vars', help='The list of variables you wish to eliminate.',
                         nargs='+', type=int, default=[])
     args = parser.parse_args()
-    network = util.create_network(args.model, args.evidence)
+    network = util.create_network(args.model)
+    if args.evidence:
+        evidence = util.get_evidence(args.evidence)
+        network.condition(evidence)
     if args.function == 'joint_distribution':
         print(network.joint_distribution())
     elif args.function == 'partition_function':
