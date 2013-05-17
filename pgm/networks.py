@@ -80,14 +80,13 @@ class Factor(dict):
 
 class Network:
 
-    def __init__(self, vars_, factors=[], card={}, ntype='MARKOV'):
+    def __init__(self, factors=[], card={}, ntype='MARKOV'):
         self.ntype=ntype
         self.card = {i: list(range(v)) for i, v in enumerate(card)}
         self.factors = factors
-        self.vars = vars_
 
     def __str__(self):
-        return '\n\n'.join([str(f) for f in self.factors])
+        return '\n\n'.join([self.ntype] + [str(f) for f in self.factors])
 
     def add_factor(self, factor):
         self.factors.append(factor)
@@ -107,19 +106,20 @@ class Network:
         return reduce(mul, factors)
 
     def partition_function(self, heuristic=None):
-        self.variable_elimination(self.vars[:], heuristic)
+        self.variable_elimination(list(self.card), heuristic)
         return sum(self.joint_distribution().values())
 
     def eliminate_var(self, v):
         used_factors = []
+        new_factors = []
         for factor in self.factors[:]:
             if v in factor.vars:
                 used_factors.append(factor)
-                self.remove_factor(factor)
+            else:
+                new_factors.append(factor)
         psi = self.joint_distribution(used_factors)
         psi.marginalize(v)
-        self.add_factor(psi)
-        self.vars.remove(v)
+        self.factors = new_factors + [psi]
         del self.card[v]
 
     def variable_elimination(self, variables, heuristic=None):
@@ -128,14 +128,14 @@ class Network:
             for v in variables:
                 self.eliminate_var(v)
         else:
-            fn = {'min-neighbor     ': self._num_neighbors,
-                  'min-weights'      : self._weights,
-                  'min-fill'         : self._fill,
-                  'weighted-min-fill': self._weighted_fill}
+            fn = {'min-neighbor'      : self._num_neighbors,
+                  'min-weights'       : self._weights,
+                  'min-fill'          : self._fill,
+                  'weighted-min-fill' : self._weighted_fill}
 
             while variables:
                 best = self._best_var(variables, fn[heuristic])
-                eliminate_var(best)
+                self.eliminate_var(best)
                 variables.remove(best)
         stop = timeit.default_timer()
         print ("the running time is :",stop-start)
@@ -159,7 +159,7 @@ class Network:
         neighbors = defaultdict(set)
         for factor in self.factors:
             for v in factor.vars:
-                self.neighbors[v] |= set(factor.vars) - {v}
+                neighbors[v] |= set(factor.vars) - {v}
 
         for v in neighbors:
             if v in variables:
