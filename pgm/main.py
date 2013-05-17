@@ -1,5 +1,4 @@
 import argparse
-import pgm.networks as networks
 import pgm.util as util
 
 def main(heuristic):

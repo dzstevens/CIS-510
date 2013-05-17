@@ -3,9 +3,9 @@ from pgm.networks import Factor, Network
 def create_network(model_file):
     with open(model_file) as f:
         ntype = f.readline().strip()
-        variables = [i for i in range(int(f.readline().strip()))]
+        f.readline()
         cards = [int(i) for i in f.readline().strip().split()]
-        network = Network(variables, card=cards, ntype=ntype)
+        network = Network(card=cards, ntype=ntype)
         cliques =[]
         for i in range(int(f.readline())):
             cliques.append([int(i) for i in f.readline().strip().split()][1:])

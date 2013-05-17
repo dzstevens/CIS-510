@@ -79,14 +79,13 @@ class Factor(dict):
 
 class Network:
 
-    def __init__(self, vars_, factors=[], card={}, ntype='MARKOV'):
+    def __init__(self, factors=[], card={}, ntype='MARKOV'):
         self.ntype=ntype
         self.card = {i: list(range(v)) for i, v in enumerate(card)}
         self.factors = factors
-        self.vars = vars_
 
     def __str__(self):
-        return '\n\n'.join([str(f) for f in self.factors])
+        return '\n\n'.join([self.ntype] + [str(f) for f in self.factors])
 
     def add_factor(self, factor):
         self.factors.append(factor)
@@ -106,7 +105,7 @@ class Network:
         return reduce(mul, factors)
 
     def partition_function(self, heuristic=None):
-        self.variable_elimination(self.vars[:], heuristic)
+        self.variable_elimination(list(self.card), heuristic)
         return sum(self.joint_distribution().values())
 
     def eliminate_var(self, v):
@@ -118,7 +117,6 @@ class Network:
         psi = self.joint_distribution(used_factors)
         psi.marginalize(v)
         self.add_factor(psi)
-        self.vars.remove(v)
         del self.card[v]
 
     def variable_elimination(self, variables, heuristic=None):
