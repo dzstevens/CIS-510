@@ -1,7 +1,7 @@
 from itertools import product
 from functools import reduce
 from operator import mul
-
+from collections import defaultdict
 
 class Factor(dict):
     
@@ -78,8 +78,56 @@ def _eliminate_var(v, factors):
     return factors
 
 
-def variable_elimination(variables, factors):
+def variable_elimination(variables, factors, heuristic=None):
     F = factors
-    for v in variables:
-        F = _eliminate_var(v, F)
-    return reduce(mul, F)
+    if not heuristic:
+        for v in variables:
+            F = _eliminate_var(v, F)
+    else:
+        fn = {'min-neighbor': neighborhood, 'min-weights': weights,
+              'min-fill': fill, 'weighted-min-fill': weighted_fill}
+        while variables:
+            neighbors = defaultdict(set)
+            for factor in F:
+                for v in factor.vars:
+                    neighbors[v] |= set(factor.vars) - {v}
+            best = best_var(variables, neighbors, fn[heuristic], factors[0].card)
+            _eliminate_var(best, F)
+            variables.remove(best)
+    return F
+
+
+def best_var(variables, neighbors, f, cards):
+    best = None
+    best_val = float('inf')
+    for v in neighbors:
+        if v in variables:
+            temp = f(neighbors, v, cards)
+            if temp < best_val:
+                best_val = temp
+                best = v
+    return best
+
+
+
+def neighborhood(neighbors, v, *args):
+    return len(neighbors[v])
+
+
+def weights(neighbors, v, card, *args):
+   return reduce(mul, [card[i] for i in neighbors[v]], 0)
+
+
+def fill(neighbors, v, *args):
+    fill = 0
+    for n in neighbors[v]:
+        fill += len(neighbors[v] - neighbors[n])
+    return fill
+
+def weighted_fill(neighbors, v, card, *args):
+    w_fill = 0
+    for n in neighbors[v]:
+        fills = neighbors[v] - neighbors[n]
+        w_fill += sum(card[n]*card[i] for i in fills)
+    return w_fill
+    
