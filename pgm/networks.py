@@ -9,8 +9,7 @@ class Factor(dict):
     def __init__(self, vars_, vals, net):
         self.vars = vars_
         self.network = net
-        assignments = [a for a in product(*[list(range(net.card[n]))
-                                            for n in vars_])]
+        assignments = [a for a in product(*[net.card[v] for v in vars_])]
         self.update(zip(assignments, vals))
 
     def __str__(self):
@@ -35,7 +34,7 @@ class Factor(dict):
         ind1 = tuple(vars_.index(v) for v in self.vars if v in vars_)
         ind2 = tuple(vars_.index(v) for v in other.vars if v in vars_)
         psi = []
-        for assignment in product(*[range(self.network.card[v]) for v in vars_]):
+        for assignment in product(*[self.network.card[v] for v in vars_]):
             key1 = tuple(assignment[i] for i in ind1)
             key2 = tuple(assignment[i] for i in ind2)
             psi.append(self[key1] * other[key2])
@@ -49,10 +48,18 @@ class Factor(dict):
 
     def __truediv__(self, x):
         return Factor(self.vars, [self[v]/x for v in sorted(self)],
-                      self.network.card)
+                      self.network)
 
     def __itruediv__(self, x):
         return self / x
+
+    def condition(self, evidence):
+        for var, val in evidence.items():
+            if var in self.vars:
+                ind = self.vars.index(var)
+                for assignment in list(self):
+                    if assignment[ind] != val:
+                        del self[assignment]
 
     def normalize(self):
         self /= sum(self.values())
@@ -61,10 +68,10 @@ class Factor(dict):
         ind = self.vars.index(v)
         vars_ = self.vars[:ind]+self.vars[ind+1:]
         tau = {}
-        for assignment in [a for a in product(*[list(range(self.network.card[n]))
-                                              for n in vars_])]:
-            tau[assignment] = sum(self[assignment[:ind]+(i,)+assignment[ind:]]
-                                        for i in range(self.network.card[v]))
+        for assignment in [a for a in product(*[self.network.card[n] for n in vars_])]:
+            for i in self.network.card[v]:
+                tau[assignment] = sum(self[assignment[:ind]+(i,)+assignment[ind:]]
+                                      for i in self.network.card[v])
         self.clear()
         self.update(tau)
         self.vars.remove(v)
@@ -74,7 +81,7 @@ class Network:
 
     def __init__(self, vars_, factors=[], card={}, ntype='MARKOV'):
         self.ntype=ntype
-        self.card = card
+        self.card = {i: list(range(v)) for i, v in enumerate(card)}
         self.factors = factors
         self.vars = vars_
 
@@ -86,6 +93,12 @@ class Network:
 
     def remove_factor(self, factor):
         self.factors.remove(factor)
+
+    def condition(self, evidence):
+        for var, val in evidence.items():
+            self.card[var] = [val]
+        for factor in self.factors:
+            factor.condition(evidence)
 
     def joint_distribution(self, factors=None):
         if not factors:
@@ -106,6 +119,7 @@ class Network:
         psi.marginalize(v)
         self.add_factor(psi)
         self.vars.remove(v)
+        del self.card[v]
 
     def variable_elimination(self, variables, heuristic=None):
         if not heuristic:
@@ -118,7 +132,7 @@ class Network:
                   'weighted-min-fill': self._weighted_fill}
 
             while variables:
-                best = self._best_var(variables, fn[heuristic], factors[0].card)
+                best = self._best_var(variables, fn[heuristic])
                 eliminate_var(best)
                 variables.remove(best)
         return self
@@ -143,7 +157,7 @@ class Network:
         return len(neighbors[v])
 
     def _weights(self, neighbors, v):
-       return reduce(mul, [self.card[i] for i in neighbors[v]], 0)
+       return reduce(mul, [len(self.card[i]) for i in neighbors[v]], 0)
 
     def _fill(self, neighbors, v):
         fill = 0
@@ -155,6 +169,6 @@ class Network:
         w_fill = 0
         for n in neighbors[v]:
             fills = neighbors[v] - neighbors[n]
-            w_fill += sum(self.card[n] * self.card[i]
+            w_fill += sum(len(self.card[n]) * len(self.card[i])
                           for i in fills)
         return w_fill    
