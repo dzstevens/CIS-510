@@ -22,9 +22,9 @@ if __name__ == '__main__':
                                               'or MAP inference',
                         nargs='+', type=int, default=[])
     parser.add_argument('-T', '--threshold', help='The threshold value for loopy belief propegation',
-                        type=float)
+                        type=float, default=0.0001)
     parser.add_argument('-i', '--iterations', help='The number of iterations for loopy belief propegation',
-                        type=int)
+                        type=int, default=50)
     parser.add_argument('-t', '--time', help='Set this to get timing stats at runtinme',
                         action='store_true')
 
