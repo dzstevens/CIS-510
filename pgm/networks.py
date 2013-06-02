@@ -2,6 +2,8 @@ from itertools import product
 from functools import reduce
 from operator import mul
 from collections import defaultdict
+from multiprocessing import Process, Pipe
+
 
 class Factor(dict):
     
@@ -27,6 +29,10 @@ class Factor(dict):
                 s += '{:<5}\n'.format(value)
         s += line
         return(s)
+
+    def copy(self):
+        vals = [self[i] for i in sorted(self)]
+        return Factor(self.vars, vals, self.network)
 
     def __mul__(self, other):
         vars_ = sorted(set(self.vars + other.vars))
@@ -101,7 +107,9 @@ class Network:
     def joint_distribution(self, factors=None):
         if not factors:
             factors = self.factors
-        return reduce(mul, factors)
+        joint = reduce(mul, factors)
+        joint.normalize()
+        return joint
 
     def partition_function(self, heuristic=None):
         self.variable_elimination(list(self.card), heuristic)
@@ -134,7 +142,7 @@ class Network:
                 best = self._best_var(variables, fn[heuristic])
                 self.eliminate_var(best)
                 variables.remove(best)
-        return self
+        return self.joint_distribution()
 
     def map(self,variables):
 
@@ -146,6 +154,68 @@ class Network:
         f2.normalize()
         max_assignment = max(f2, key=lambda x: f2[x])
         return dict(zip(variables, max_assignment)), f2[max_assignment]
+
+    def loopy_bp(self, threshold=0.0001, iterations=50):
+        var_map = defaultdict(list)
+        for i, f in enumerate(self.factors):
+            for v in f.vars:
+                var_map[v].append(i)
+        # msg[f,v] = m(f->v), m(v->f)
+        msgs = {(f,v): [None, None] for v in var_map
+                                for f in var_map[v]}  
+        converged = {(f,v): [False, False] for v in var_map
+                                for f in var_map[v]}  
+        for i in range(iterations):
+            done = True
+            for v, factors in var_map.items():
+                for f in factors:
+                    if not converged[f, v][1]:
+                        done = False
+                        neighbors = set(factors) - {f}
+                        msg = self._mul_msgs(v, [msgs[n, v][0] for n in neighbors])
+                        if msgs[f, v][1] is None or abs(1 - msg[0]/msgs[f, v][1][0]) > threshold:
+                            msgs[f, v][1] = msg
+                        else:
+                            converged[f, v][1] = True
+
+            for i, f in enumerate(self.factors):
+                for v in f.vars:
+                    if not converged[i, v][0]:
+                        done = False
+                        temp = f.copy()
+                        neighbors = set(f.vars) - {v}
+                        for n, m in [(n, msgs[i, n][1]) for n in neighbors]:
+                            if m is not None:
+                                temp *= Factor([n], m, self)
+                        for n in neighbors:
+                            temp.marginalize(n)
+                        temp.normalize()
+                        msg = tuple(temp[val] for val in sorted(temp))
+                        if msgs[i, v][0] is None or abs(1 - msg[0]/msgs[i, v][0][0]) > threshold:
+                            msgs[i, v][0] = msg
+                        else:
+                            converged[i, v][0] = True
+            if done:
+                break
+
+        marginals = []
+        for v, factors in var_map.items():
+            neighbors = set(factors)
+            msg = self._mul_msgs(v, [msgs[n, v][0] for n in neighbors])
+            marginal = Factor([v], msg, self)
+            marginal.normalize()
+            marginals.append(marginal)
+        return marginals
+
+    def _mul_msgs(self, v, msgs):
+        msg = (1, ) * len(self.card[v])
+        for m in msgs:
+            if m is not None:
+                msg = tuple(msg[i] * val for i, val in enumerate(m))
+#        print(msg)
+        s = sum(msg)
+        msg = tuple(i/s for i in msg)
+        return msg
        
     def _best_var(self, variables, f):
         best = None
@@ -182,3 +252,5 @@ class Network:
             w_fill += sum(len(self.card[n]) * len(self.card[i])
                           for i in fills)
         return w_fill    
+
+

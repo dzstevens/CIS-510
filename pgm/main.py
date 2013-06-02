@@ -10,7 +10,8 @@ if __name__ == '__main__':
     parser.add_argument('model', help='the model file for your network')
     parser.add_argument('function', help='the function to perform on your network. '
                                          'Current choices: joint_distribution, '
-                                         'variable_elimination, partition_function, map')
+                                         'variable_elimination, partition_function, map, '
+                                         'loopy_bp')
     parser.add_argument('-e', '--evidence', help='an evidence file to condition on')
     parser.add_argument('-u', '--heuristic', help='the heuristic to be used when performing '
                                                   'variable elimination. If not specified, '
@@ -20,6 +21,10 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--vars', help='The list of variables for variable elimination'
                                               'or MAP inference',
                         nargs='+', type=int, default=[])
+    parser.add_argument('-T', '--threshold', help='The threshold value for loopy belief propegation',
+                        type=float)
+    parser.add_argument('-i', '--iterations', help='The number of iterations for loopy belief propegation',
+                        type=int)
     parser.add_argument('-t', '--time', help='Set this to get timing stats at runtinme',
                         action='store_true')
 
@@ -43,6 +48,9 @@ if __name__ == '__main__':
         for v, a in assignment.items():
                 print('{} = {}'.format(v, a))
         print('\nProbability:', prob)
+    elif args.function == 'loopy_bp':
+        for m in network.loopy_bp(args.threshold, args.iterations):
+            print(*[m[v] for v in sorted(m)], sep='\t')
 
     if args.time:
         print('Runtime: {:.3} ms'.format((time.time() - start)*1000))

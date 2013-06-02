@@ -5,15 +5,17 @@ This package can be used to create graphical models and perform various operatio
 
 Usage
 -----
-
-    python -m pgm.main [-h] [-e EVIDENCE] [-u HEURISTIC] [-v VARS [VARS ...]] [-t] model function
+    usage: python -m pgm.main [-h] [-e EVIDENCE] [-u HEURISTIC]
+                              [-v VARS [VARS ...]] [-T THRESHOLD] [-i ITERATIONS]
+                              [-t]
+                              model function
 
 
     positional arguments:
       model                 the model file for your network
       function              the function to perform on your network. Current
                             choices: joint_distribution, variable_elimination,
-                            partition_function, map
+                            partition_function, map, loopy_bp
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -28,4 +30,9 @@ Usage
       -v VARS [VARS ...], --vars VARS [VARS ...]
                             The list of variables for variable eliminationor MAP
                             inference
+      -T THRESHOLD, --threshold THRESHOLD
+                            The threshold value for loopy belief propegation
+      -i ITERATIONS, --iterations ITERATIONS
+                            The number of iterations for loopy belief propegation
       -t, --time            Set this to get timing stats at runtinme
+
